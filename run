@@ -1,0 +1,86 @@
+# run [options] command
+#   A tool for displaying the executed command along with its optional
+#   output. It shows the command output status return code at the end
+#   of the command line. Typically used in shell scripting when writing
+#   test cases.
+#
+#   When no options are specified, run the command, and display return
+#   status code at the end the command.
+#
+#   Options:
+#	-qq Run the command quietly; no command information is shown.
+#	-q  Run the command quietly; show err only when the command fails.
+#	-s  Skip calling exit when the command fails.
+#	-o  Show the output the command created.
+#
+
+run()
+{
+	local ret
+
+	rm /tmp/run.out /tmp/run.err /tmp/run.cmd > /dev/null 2>&1
+	>/tmp/run.out
+	>/tmp/run.err
+
+	echo -n "\$ ${*} :" > /tmp/run.cmd
+	if [ $quiet -lt 2 ]; then
+		cat /tmp/run.cmd
+	fi
+	#echo ${*} 2>/tmp/run.err 1>/tmp/run.out
+	echo ${*} | bash 2>/tmp/run.err 1>/tmp/run.out
+	ret=$?
+	if [ $quiet -lt 2 ]; then
+		echo "$ret " | tee -a /tmp/run.cmd
+	fi
+
+	if [[ $outdump == "true" ]]; then
+		cat /tmp/run.out
+		echo
+	fi
+	if [ $quiet -eq 0 ]; then
+		test -s /tmp/run.err && { \
+			echo STDERR:
+			cat /tmp/run.err
+			echo
+		}
+	fi
+	if [ $ret -ne 0 ]; then
+		[[ ${exit_on_fail} == "true" ]] && \
+			{ echo ERROR: exitting; kill -9 $PPID; exit $ret; }
+	fi
+}
+
+: ${1?"Usage: run [options: -s -q[q] -o] command-to-run"}
+
+#options:
+# If a comamnd fails; call exit
+exit_on_fail="true"
+
+# Do not show output by default
+outdump="false"
+
+# quiet == 0 (default) show error; show command
+# quiet == 1 show comamnd
+# quiet == 2 show nothing
+quiet=0
+
+while getopts ":soq" opt
+do
+	case ${opt} in
+	s)
+		exit_on_fail="false"
+		;;
+	o)
+		outdump="true"
+		;;
+	q)
+		# The command may fail it is ok
+		quiet=$((quiet+1))
+		;;
+	\?) echo "$0: option not supported"
+		exit
+		;;
+	esac
+done
+shift $((OPTIND -1))
+run $@
