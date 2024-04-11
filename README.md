@@ -8,7 +8,7 @@ run [options] command
    status code at the end the command.
 
    Options:
-  	-qq Run the command quietly; no command information is shown
-  	-q  Run the command quietly; show err only when the command fails
-  	-s  Skip calling exit when the command fails
-  	-o  Show the output the command created
+     	-qq Run the command quietly; no command information is shown
+     	-q  Run the command quietly; show err only when the command fails
+     	-s  Skip calling exit when the command fails
+     	-o  Show the output the command created
